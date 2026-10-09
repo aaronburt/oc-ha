@@ -33,8 +33,9 @@ Parallelisation notes: M5 and M6 can be done in either order after M4; M7a (Mess
 - `ai_task.generate_data` with a structure returned `{"ok": true}`.
 - Full tool loop verified: "Turn on the QA Test Light." → the model called `HassTurnOn`, HA executed it, `input_boolean.qa_test_light` ended up **on** (after exposing the entity to Assist).
 
+**Voice pipeline QA complete (2026-10-09)** — local Docker services `wyoming-piper` + `wyoming-whisper`, HA integrations `tts.piper` + `stt.faster_whisper`, and a pipeline "OpenCode Voice" (STT: faster-whisper, conversation: `conversation.opencode_assistant`, TTS: piper). Verified end to end: synthesized the command audio → Whisper transcribed it → pipeline ran the agent and the tool loop (light turned **on**) → reply audio served, decoded and transcribed back ("The QA test light is now on."), and played on host speakers.
+
 **Pending:**
-- Assist *voice* pipeline QA (needs STT/TTS from another integration; Go has no audio endpoints).
 - M8 polish: diagnostics, log-once-unavailable, exception translations.
 - `v0.1.0` release + end-to-end HACS install validation (8.7).
 
