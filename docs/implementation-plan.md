@@ -26,8 +26,14 @@ Parallelisation notes: M5 and M6 can be done in either order after M4; M7a (Mess
 **Implemented and unit-tested** — 16 tests passing against Home Assistant 2026.10.0 via PHACC:
 - M1 scaffold · M2 API client (models, usage, streaming, typed errors, identity headers) · M3 config flow with subentries, reauth, reconfigure, reload-on-update · M4 conversation agent with streaming deltas and the Assist tool loop · M5 AI Task with structured output · M6 streaming for all families · M7 Chat Completions, Anthropic Messages and OpenAI Responses adapters with certified routing.
 
+**Live QA complete (2026-10-09)** — local Docker HA 2026.10.0 at `http://localhost:8124` (container `ha-opencode-test`):
+- Config flow driven through the HA API created the entry with both subentries and live model options.
+- Conversation round trip via `conversation.process` returned the expected speech.
+- `ai_task.generate_data` with a structure returned `{"ok": true}`.
+- Full tool loop verified: "Turn on the QA Test Light." → the model called `HassTurnOn`, HA executed it, `input_boolean.qa_test_light` ended up **on** (after exposing the entity to Assist).
+
 **Pending:**
-- Live manual QA in a Docker Home Assistant instance (Assist voice pipeline and an AI Task automation).
+- Assist *voice* pipeline QA (needs STT/TTS from another integration; Go has no audio endpoints).
 - M8 polish: diagnostics, log-once-unavailable, exception translations.
 - `v0.1.0` release + end-to-end HACS install validation (8.7).
 

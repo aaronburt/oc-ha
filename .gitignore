@@ -20,6 +20,9 @@ htmlcov/
 *.local.json
 secrets/
 
+# Local test Home Assistant instance
+.ha-test/
+
 # OS noise
 .DS_Store
 Thumbs.db
