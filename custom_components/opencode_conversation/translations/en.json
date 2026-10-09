@@ -1,0 +1,116 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to OpenCode",
+        "description": "Enter an OpenCode Go API key. Create or manage keys in the OpenCode Console after subscribing to Go.",
+        "data": {
+          "api_key": "API key"
+        },
+        "data_description": {
+          "api_key": "Stored in your Home Assistant configuration and sent only to opencode.ai."
+        }
+      },
+      "model": {
+        "title": "Choose a model",
+        "description": "Pick the model for the first OpenCode assistant. You can add more assistants with other models later.",
+        "data": {
+          "model": "Model"
+        },
+        "data_description": {
+          "model": "Only models available to your subscription with a verified API family are listed."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate OpenCode",
+        "description": "The OpenCode API key was rejected. Enter a valid key for the same account.",
+        "data": {
+          "api_key": "API key"
+        }
+      },
+      "reconfigure": {
+        "title": "Update OpenCode API key",
+        "description": "Enter a new API key for this OpenCode account.",
+        "data": {
+          "api_key": "API key"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid API key",
+      "cannot_connect": "Failed to connect to OpenCode"
+    },
+    "abort": {
+      "already_configured": "This API key is already configured",
+      "reauth_successful": "Reauthentication was successful"
+    }
+  },
+  "config_subentries": {
+    "conversation": {
+      "title": "Conversation agent",
+      "entry_type": "Conversation agent",
+      "initiate_flow": {
+        "user": "Add conversation agent",
+        "reconfigure": "Reconfigure conversation agent"
+      },
+      "step": {
+        "init": {
+          "title": "Conversation agent",
+          "description": "Configure this OpenCode conversation agent.",
+          "data": {
+            "name": "Name",
+            "model": "Model",
+            "custom_model": "Custom model ID",
+            "api_family": "API family",
+            "llm_hass_api": "Control Home Assistant",
+            "prompt": "Instructions",
+            "max_tokens": "Maximum response tokens"
+          },
+          "data_description": {
+            "name": "A name for this agent, for example the room or purpose it serves.",
+            "model": "Certified models available to your subscription.",
+            "custom_model": "Optional. Use a model ID that is not in the list above, for example a newly released model.",
+            "api_family": "Which API the model speaks. Leave on Automatic unless you use a custom model.",
+            "llm_hass_api": "Select Assist to let the model control your home. Leave empty for a chat-only agent.",
+            "prompt": "Optional extra instructions added to every request.",
+            "max_tokens": "Upper limit for tokens the model may generate per response."
+          }
+        }
+      },
+      "abort": {
+        "entry_not_loaded": "The OpenCode integration is not loaded. Start it before adding agents."
+      }
+    },
+    "ai_task_data": {
+      "title": "AI task",
+      "entry_type": "AI task",
+      "initiate_flow": {
+        "user": "Add AI task",
+        "reconfigure": "Reconfigure AI task"
+      },
+      "step": {
+        "init": {
+          "title": "AI task",
+          "description": "Configure this OpenCode AI task entity.",
+          "data": {
+            "name": "Name",
+            "model": "Model",
+            "custom_model": "Custom model ID",
+            "api_family": "API family",
+            "max_tokens": "Maximum response tokens"
+          },
+          "data_description": {
+            "name": "A name for this AI task entity.",
+            "model": "Certified models available to your subscription.",
+            "custom_model": "Optional. Use a model ID that is not in the list above.",
+            "api_family": "Which API the model speaks. Leave on Automatic unless you use a custom model.",
+            "max_tokens": "Upper limit for tokens the model may generate per task."
+          }
+        }
+      },
+      "abort": {
+        "entry_not_loaded": "The OpenCode integration is not loaded. Start it before adding AI tasks."
+      }
+    }
+  }
+}
