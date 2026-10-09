@@ -1,15 +1,15 @@
 {
   "domain": "opencode_conversation",
   "name": "OpenCode",
-  "version": "0.1.0",
-  "config_flow": true,
-  "dependencies": ["conversation"],
   "after_dependencies": ["assist_pipeline", "intent"],
   "codeowners": ["@aaronburt"],
+  "config_flow": true,
+  "dependencies": ["conversation"],
   "documentation": "https://github.com/aaronburt/oc-ha",
-  "issue_tracker": "https://github.com/aaronburt/oc-ha/issues",
   "integration_type": "service",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/aaronburt/oc-ha/issues",
   "quality_scale": "bronze",
-  "requirements": []
+  "requirements": [],
+  "version": "0.1.0"
 }
