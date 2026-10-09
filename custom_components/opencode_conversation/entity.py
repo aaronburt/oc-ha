@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Final
 import probatio
 from homeassistant.components import conversation
 from homeassistant.components.conversation import ChatLog
-from homeassistant.config_entries import ConfigSubentry
+from homeassistant.config_entries import ConfigEntryState, ConfigSubentry
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import llm
@@ -360,28 +360,51 @@ class OpenCodeBaseLLMEntity(Entity):
         """Return the API client stored on the config entry."""
         return self.entry.runtime_data
 
+    @property
+    def available(self) -> bool:
+        """Return if the entity is available."""
+        return self.entry.state is ConfigEntryState.LOADED
+
     def _async_api_error(self, err: OpenCodeError, model: str) -> HomeAssistantError:
         """Translate an API error into a user facing error."""
         if isinstance(err, OpenCodeAuthError):
             self.entry.async_start_reauth(self.hass)
             return HomeAssistantError(
-                "OpenCode rejected the API key. Please reauthenticate the integration."
+                translation_domain=DOMAIN,
+                translation_key="authentication_error",
             )
         if isinstance(err, OpenCodeRateLimited):
-            message = f"OpenCode usage limit reached for {model}."
             if err.retry_after:
-                message += f" Try again in {int(err.retry_after)} seconds."
-            return HomeAssistantError(message)
+                return HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="rate_limit_retry",
+                    translation_placeholders={
+                        "model": model,
+                        "seconds": str(int(err.retry_after)),
+                    },
+                )
+            return HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="rate_limit",
+                translation_placeholders={"model": model},
+            )
         if isinstance(err, OpenCodeProtocolError):
             return HomeAssistantError(
-                f"Model {model} does not support the configured API family. "
-                "Check the agent options."
+                translation_domain=DOMAIN,
+                translation_key="protocol_unsupported",
+                translation_placeholders={"model": model},
             )
         if isinstance(err, OpenCodeModelUnavailable):
             return HomeAssistantError(
-                f"Model {model} is no longer available on OpenCode Go."
+                translation_domain=DOMAIN,
+                translation_key="model_unavailable",
+                translation_placeholders={"model": model},
             )
-        return HomeAssistantError(f"Error talking to OpenCode: {err}")
+        return HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="api_error",
+            translation_placeholders={"error": str(err)},
+        )
 
     async def _async_handle_chat_log(
         self,

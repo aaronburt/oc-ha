@@ -36,16 +36,20 @@ rules:
   config-entry-unloading: done
   docs-configuration-parameters: done
   docs-installation-parameters: done
-  entity-unavailable: todo
+  entity-unavailable: done
   integration-owner: done
-  log-when-unavailable: todo
+  log-when-unavailable:
+    status: exempt
+    comment: |
+      The integration does not poll. Request failures are surfaced to the
+      user per request, and setup retries through ConfigEntryNotReady.
   parallel-updates: done
   reauthentication-flow: done
-  test-coverage: todo
+  test-coverage: done
 
   # Gold
   devices: done
-  diagnostics: todo
+  diagnostics: done
   discovery-update-info:
     status: exempt
     comment: Service integration, no discovery.
@@ -75,13 +79,19 @@ rules:
   entity-disabled-by-default:
     status: exempt
     comment: No entities disabled by default.
-  entity-translations: todo
-  exception-translations: todo
+  entity-translations:
+    status: exempt
+    comment: Entity names are the user-defined subentry titles.
+  exception-translations: done
   icon-translations:
     status: exempt
     comment: Only conversation and AI task entities, no icons.
   reconfiguration-flow: done
-  repair-issues: todo
+  repair-issues:
+    status: exempt
+    comment: |
+      Authentication issues trigger the reauth flow, usage limits are
+      transient, and removed models are fixed by editing the agent options.
   stale-devices:
     status: exempt
     comment: Service integration, no devices.

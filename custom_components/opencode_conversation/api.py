@@ -102,7 +102,8 @@ class OpenCodeClient:
             message = error
         else:
             error_type = ""
-            message = str(body.get("message", resp.reason or "Unknown error"))
+            reason = getattr(resp, "reason", None) or "Unknown error"
+            message = str(body.get("message") or reason)
 
         status = resp.status
         if status in (401, 403):

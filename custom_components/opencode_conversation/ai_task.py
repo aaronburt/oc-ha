@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util.json import json_loads
 
 from . import OpenCodeConfigEntry
+from .const import DOMAIN
 from .entity import OpenCodeBaseLLMEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -59,7 +60,10 @@ class OpenCodeAITaskEntity(ai_task.AITaskEntity, OpenCodeBaseLLMEntity):
         if not chat_log.content or not isinstance(
             chat_log.content[-1], conversation.AssistantContent
         ):
-            raise HomeAssistantError("OpenCode returned no assistant response")
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="empty_response",
+            )
 
         text = chat_log.content[-1].content or ""
 
@@ -76,7 +80,8 @@ class OpenCodeAITaskEntity(ai_task.AITaskEntity, OpenCodeBaseLLMEntity):
                 "Failed to parse structured response: %s. Response: %s", err, text
             )
             raise HomeAssistantError(
-                "OpenCode returned an invalid structured response"
+                translation_domain=DOMAIN,
+                translation_key="invalid_structured_response",
             ) from err
 
         return ai_task.GenDataTaskResult(

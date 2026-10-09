@@ -112,5 +112,31 @@
         "entry_not_loaded": "The OpenCode integration is not loaded. Start it before adding AI tasks."
       }
     }
+  },
+  "exceptions": {
+    "api_error": {
+      "message": "Error talking to OpenCode: {error}"
+    },
+    "authentication_error": {
+      "message": "OpenCode rejected the API key. Please reauthenticate the integration."
+    },
+    "empty_response": {
+      "message": "OpenCode returned no assistant response."
+    },
+    "invalid_structured_response": {
+      "message": "OpenCode returned an invalid structured response."
+    },
+    "model_unavailable": {
+      "message": "Model {model} is no longer available on OpenCode Go."
+    },
+    "protocol_unsupported": {
+      "message": "Model {model} does not support the configured API family. Check the agent options."
+    },
+    "rate_limit": {
+      "message": "OpenCode usage limit reached for {model}. Try again later."
+    },
+    "rate_limit_retry": {
+      "message": "OpenCode usage limit reached for {model}. Try again in {seconds} seconds."
+    }
   }
 }

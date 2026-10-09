@@ -1,0 +1,25 @@
+"""Tests for OpenCode constants."""
+
+from __future__ import annotations
+
+from custom_components.opencode_conversation.const import (
+    FAMILY_AUTO,
+    FAMILY_CHAT,
+    FAMILY_MESSAGES,
+    FAMILY_RESPONSES,
+    family_for,
+)
+
+
+def test_family_for_uses_certified_map():
+    """Certified models resolve to their documented API family."""
+    assert family_for("claude-haiku-5-5") == FAMILY_MESSAGES
+    assert family_for("gpt-6-luna") == FAMILY_RESPONSES
+    assert family_for("deepseek-v4.1-flash") == FAMILY_CHAT
+
+
+def test_family_for_fallbacks():
+    """Unknown models fall back to the override or chat completions."""
+    assert family_for("unknown-model") == FAMILY_CHAT
+    assert family_for("unknown-model", FAMILY_AUTO) == FAMILY_CHAT
+    assert family_for("unknown-model", FAMILY_MESSAGES) == FAMILY_MESSAGES
