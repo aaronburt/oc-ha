@@ -47,7 +47,6 @@
   },
   "config_subentries": {
     "conversation": {
-      "title": "Conversation agent",
       "entry_type": "Conversation agent",
       "initiate_flow": {
         "user": "Add conversation agent",
@@ -82,7 +81,6 @@
       }
     },
     "ai_task_data": {
-      "title": "AI task",
       "entry_type": "AI task",
       "initiate_flow": {
         "user": "Add AI task",
