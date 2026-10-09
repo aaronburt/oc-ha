@@ -28,7 +28,7 @@ Parallelisation notes: M5 and M6 can be done in either order after M4; M7a (Mess
 
 **Pending:**
 - Live manual QA in a Docker Home Assistant instance (Assist voice pipeline and an AI Task automation).
-- M8 polish: diagnostics, log-once-unavailable, exception translations, first CI run on GitHub.
+- M8 polish: diagnostics, log-once-unavailable, exception translations.
 - `v0.1.0` release + end-to-end HACS install validation (8.7).
 
 ---
