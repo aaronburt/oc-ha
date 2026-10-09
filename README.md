@@ -60,13 +60,6 @@ data:
 response_variable: result
 ```
 
-## Known limitations
-
-- **No speech-to-text, text-to-speech, or image generation** — OpenCode Go has no endpoints for these, so the AI Task entity generates data only.
-- **Text only** — attachments are not sent yet.
-- **Model list is curated** — OpenCode adds and removes models regularly. Use *Custom model ID* plus *API family* for anything not in the list yet.
-- **Capabilities vary by model** — tool calling works across all families, but quality and structured-output support differ.
-
 ## Troubleshooting
 
 - **"Invalid API key"** — check the key in the [OpenCode Console](https://opencode.ai/console). If it was rotated, use **Reauthenticate** on the integration.
@@ -74,17 +67,3 @@ response_variable: result
 - **"Model … is no longer available"** — the model was removed from Go. Edit the agent and pick another model.
 - **"Model … does not support the configured API family"** — for a custom model, set the correct **API family** in the agent options.
 - When reporting an issue, enable debug logging for `custom_components.opencode_conversation`.
-
-## Privacy
-
-- Your API key is stored in your Home Assistant configuration and sent only to `opencode.ai`.
-- OpenCode Go is designed for coding agents and OpenCode monitors traffic for abuse. This integration sends typical assistant traffic; keep usage reasonable and review the [OpenCode Go docs](https://opencode.ai/v2/docs/console/go) for current terms.
-- **Data handling varies by model.** The model picker marks any model that keeps prompts or may use them for training. Check the [Go privacy table](https://opencode.ai/v2/docs/console/go#privacy) before sending sensitive data.
-
-## Removal
-
-Remove **OpenCode** from **Settings → Devices & services**. Manual installs can then delete the `custom_components/opencode_conversation` folder.
-
-## License
-
-[MIT](LICENSE)
