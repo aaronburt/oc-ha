@@ -35,9 +35,9 @@ Parallelisation notes: M5 and M6 can be done in either order after M4; M7a (Mess
 
 **Voice pipeline QA complete (2026-10-09)** — local Docker services `wyoming-piper` + `wyoming-whisper`, HA integrations `tts.piper` + `stt.faster_whisper`, and a pipeline "OpenCode Voice" (STT: faster-whisper, conversation: `conversation.opencode_assistant`, TTS: piper). Verified end to end: synthesized the command audio → Whisper transcribed it → pipeline ran the agent and the tool loop (light turned **on**) → reply audio served, decoded and transcribed back ("The QA test light is now on."), and played on host speakers.
 
-**Pending:**
-- M8 polish: diagnostics, log-once-unavailable, exception translations.
-- `v0.1.0` release + end-to-end HACS install validation (8.7).
+**M8 complete (2026-10-09)** — diagnostics with API key redaction, translatable exception messages, entity availability tied to the config entry state (`log-when-unavailable` deliberately exempt: the integration does not poll), quality-scale updates, and test coverage at 97% (65 tests; every module ≥ 96%).
+
+**Released** — [`v0.1.0`](https://github.com/aaronburt/oc-ha/releases/tag/v0.1.0). Remaining manual step: install through the HACS UI on a clean Home Assistant instance (requires a GitHub login inside HACS).
 
 ---
 
