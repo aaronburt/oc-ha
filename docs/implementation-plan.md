@@ -25,6 +25,7 @@ Parallelisation notes: M5 and M6 can be done in either order after M4; M7a (Mess
 
 **Implemented and unit-tested** — 16 tests passing against Home Assistant 2026.10.0 via PHACC:
 - M1 scaffold · M2 API client (models, usage, streaming, typed errors, identity headers) · M3 config flow with subentries, reauth, reconfigure, reload-on-update · M4 conversation agent with streaming deltas and the Assist tool loop · M5 AI Task with structured output · M6 streaming for all families · M7 Chat Completions, Anthropic Messages and OpenAI Responses adapters with certified routing.
+- Environment context: every request appends a short context line (model name, OpenCode Go, Home Assistant) to the system prompt; user instructions are preserved. Live-verified — the model answered *"I'm the deepseek-v4.1-flash model, running inside Home Assistant via OpenCode Go…"* (20 tests passing).
 
 **Live QA complete (2026-10-09)** — local Docker HA 2026.10.0 at `http://localhost:8124` (container `ha-opencode-test`):
 - Config flow driven through the HA API created the entry with both subentries and live model options.

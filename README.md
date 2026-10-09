@@ -12,6 +12,7 @@ Use models from your [OpenCode Go](https://opencode.ai/go) subscription as Home 
 - **All three OpenCode Go API families** — Chat Completions models (DeepSeek V4, GLM, Kimi, LongCat, MiMo, …), Anthropic Messages models (Claude Haiku 5.5, MiniMax, Qwen), and OpenAI Responses models (GPT, Grok, Muse Spark).
 - **Streaming responses** — token-by-token streaming, so Assist voice responses can start speaking before the model has finished.
 - **Model discovery** — the setup flow and agent options show the models available to *your* subscription, with a manual override for new or unlisted models.
+- **Environment awareness** — each request tells the model its model name and that it runs in Home Assistant through OpenCode Go, layered on top of Home Assistant's own instructions without overriding your custom prompts.
 
 ## Requirements
 

@@ -167,6 +167,33 @@ def _reasoning_item(native: Any) -> dict[str, Any] | None:
     return None
 
 
+def _system_context(model: str, has_tools: bool) -> str:
+    """Return a short context line giving the model base environment awareness."""
+    context = (
+        f"Context: you are running through OpenCode Go as model {model}. "
+        "Your environment is Home Assistant."
+    )
+    if has_tools:
+        context += " Use the provided tools to control it instead of guessing."
+    return context
+
+
+def _content_with_context(
+    contents: Iterable[conversation.Content], context: str
+) -> list[conversation.Content]:
+    """Append the context line to the system message, adding one if missing."""
+    result = list(contents)
+    for index, content in enumerate(result):
+        if content.role == "system":
+            text = content.content or ""
+            result[index] = conversation.SystemContent(
+                content=f"{text}\n{context}" if text else context
+            )
+            return result
+    result.insert(0, conversation.SystemContent(content=context))
+    return result
+
+
 def chat_messages_from_content(
     contents: Iterable[conversation.Content],
 ) -> list[dict[str, Any]]:
@@ -370,6 +397,7 @@ class OpenCodeBaseLLMEntity(Entity):
         family = family_for(model, options.get(CONF_API_FAMILY))
         max_tokens = options.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
         session_id = chat_log.conversation_id or self._fallback_session_id
+        context = _system_context(model, chat_log.llm_api is not None)
 
         for _iteration in range(max_iterations):
             usage_out: dict[str, Any] = {}
@@ -377,17 +405,17 @@ class OpenCodeBaseLLMEntity(Entity):
                 if family == FAMILY_MESSAGES:
                     generator = self._async_stream_messages(
                         model, chat_log, max_tokens, session_id, usage_out,
-                        structure, structure_name,
+                        structure, structure_name, context,
                     )
                 elif family == FAMILY_RESPONSES:
                     generator = self._async_stream_responses(
                         model, chat_log, max_tokens, session_id, usage_out,
-                        structure, structure_name,
+                        structure, structure_name, context,
                     )
                 else:
                     generator = self._async_stream_chat(
                         model, chat_log, max_tokens, session_id, usage_out,
-                        structure, structure_name,
+                        structure, structure_name, context,
                     )
                 async for _content in chat_log.async_add_delta_content_stream(
                     self.entity_id, generator
@@ -415,12 +443,15 @@ class OpenCodeBaseLLMEntity(Entity):
         usage_out: dict[str, Any],
         structure: probatio.Schema | None,
         structure_name: str | None,
+        context: str,
     ) -> AsyncIterator[conversation.AssistantContentDeltaDict]:
         """Stream a Chat Completions response as HA deltas."""
         llm_api = chat_log.llm_api
         body: dict[str, Any] = {
             "model": model,
-            "messages": chat_messages_from_content(chat_log.content),
+            "messages": chat_messages_from_content(
+                _content_with_context(chat_log.content, context)
+            ),
             "stream_options": {"include_usage": True},
         }
         if max_tokens:
@@ -493,10 +524,13 @@ class OpenCodeBaseLLMEntity(Entity):
         usage_out: dict[str, Any],
         structure: probatio.Schema | None,
         structure_name: str | None,
+        context: str,
     ) -> AsyncIterator[conversation.AssistantContentDeltaDict]:
         """Stream an Anthropic Messages response as HA deltas."""
         llm_api = chat_log.llm_api
-        system, messages = messages_from_content(chat_log.content)
+        system, messages = messages_from_content(
+            _content_with_context(chat_log.content, context)
+        )
         if structure and structure_name:
             instruction = _structured_prompt(
                 structure_name, _format_structured_output(structure, llm_api)
@@ -575,12 +609,15 @@ class OpenCodeBaseLLMEntity(Entity):
         usage_out: dict[str, Any],
         structure: probatio.Schema | None,
         structure_name: str | None,
+        context: str,
     ) -> AsyncIterator[conversation.AssistantContentDeltaDict]:
         """Stream an OpenAI Responses response as HA deltas."""
         llm_api = chat_log.llm_api
         body: dict[str, Any] = {
             "model": model,
-            "input": responses_items_from_content(chat_log.content),
+            "input": responses_items_from_content(
+                _content_with_context(chat_log.content, context)
+            ),
             "store": False,
         }
         if max_tokens:
