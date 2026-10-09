@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator
 from typing import Any, Final, NoReturn
 
@@ -13,6 +14,8 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util.ulid import ulid_now
 
 from .const import BASE_URL, FAMILY_CHAT, FAMILY_MESSAGES, FAMILY_RESPONSES, INTEGRATION_VERSION
+
+_LOGGER = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT: Final = 60
 STREAM_TIMEOUT: Final = 600
@@ -41,6 +44,10 @@ class OpenCodeModelUnavailable(OpenCodeError):
 
 class OpenCodeProtocolError(OpenCodeError):
     """The requested model does not support the configured API family."""
+
+
+class OpenCodeTransientError(OpenCodeError):
+    """A transient upstream error that is worth retrying."""
 
 
 class OpenCodeRateLimited(OpenCodeError):
@@ -88,10 +95,14 @@ class OpenCodeClient:
 
     async def _async_raise_for_status(self, resp: aiohttp.ClientResponse) -> NoReturn:
         """Translate an error response into a typed exception."""
+        raw = await resp.read()
         try:
-            body = await resp.json()
-        except (ValueError, aiohttp.ClientError):
+            body = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
             body = {}
+        _LOGGER.debug(
+            "OpenCode error response (%s): %s", resp.status, raw[:500]
+        )
 
         error = body.get("error")
         if isinstance(error, dict):
@@ -103,7 +114,11 @@ class OpenCodeClient:
         else:
             error_type = ""
             reason = getattr(resp, "reason", None) or "Unknown error"
-            message = str(body.get("message") or reason)
+            message = str(
+                body.get("message")
+                or raw.decode("utf-8", "replace")[:200]
+                or reason
+            )
 
         status = resp.status
         if status in (401, 403):
@@ -117,6 +132,10 @@ class OpenCodeClient:
             raise OpenCodeProtocolError(message, status)
         if "unavailable" in message.lower():
             raise OpenCodeModelUnavailable(message, status)
+        if status == 400 and error is None:
+            # Upstream occasionally returns a bare 400 without an error payload
+            # (observed with structured output); treat it as transient.
+            raise OpenCodeTransientError(message, status)
         raise OpenCodeError(message, status)
 
     async def _async_request(
@@ -167,6 +186,11 @@ class OpenCodeClient:
                     BASE_URL + path, headers=headers, json=request_body
                 ) as resp:
                     if resp.status != 200:
+                        _LOGGER.debug(
+                            "OpenCode request failed (%s): %s",
+                            resp.status,
+                            json.dumps(request_body)[:2000],
+                        )
                         await self._async_raise_for_status(resp)
                     async for raw_line in resp.content:
                         line = raw_line.strip()

@@ -13,6 +13,7 @@ from custom_components.opencode_conversation.api import (
     OpenCodeModelUnavailable,
     OpenCodeProtocolError,
     OpenCodeRateLimited,
+    OpenCodeTransientError,
 )
 
 from .helpers import BASE_URL, USAGE_URL
@@ -175,6 +176,16 @@ async def test_error_body_with_string_error(hass, aioclient_mock):
     with pytest.raises(OpenCodeError) as err:
         await client.async_validate_key()
     assert str(err.value) == "plain failure"
+
+
+async def test_malformed_400_is_transient(hass, aioclient_mock):
+    """A bare 400 without an error payload is treated as transient."""
+    aioclient_mock.get(
+        USAGE_URL, status=400, json={"model": "deepseek-v4.1-flash"}
+    )
+    client = OpenCodeClient(hass, "key")
+    with pytest.raises(OpenCodeTransientError):
+        await client.async_validate_key()
 
 
 async def test_connection_error(hass, aioclient_mock):

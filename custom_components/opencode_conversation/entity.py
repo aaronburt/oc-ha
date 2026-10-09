@@ -25,6 +25,7 @@ from .api import (
     OpenCodeModelUnavailable,
     OpenCodeProtocolError,
     OpenCodeRateLimited,
+    OpenCodeTransientError,
 )
 from .const import (
     CONF_API_FAMILY,
@@ -33,6 +34,7 @@ from .const import (
     DEFAULT_MAX_TOKENS,
     DEFAULT_MODEL,
     DOMAIN,
+    FAMILY_CHAT,
     FAMILY_MESSAGES,
     FAMILY_RESPONSES,
     family_for,
@@ -170,7 +172,7 @@ def _reasoning_item(native: Any) -> dict[str, Any] | None:
 def _system_context(model: str, has_tools: bool) -> str:
     """Return a short context line giving the model base environment awareness."""
     context = (
-        f"Context: you are running through OpenCode Go as model {model}. "
+        f"You are running through OpenCode Go as model {model}. "
         "Your environment is Home Assistant."
     )
     if has_tools:
@@ -421,29 +423,61 @@ class OpenCodeBaseLLMEntity(Entity):
         max_tokens = options.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
         session_id = chat_log.conversation_id or self._fallback_session_id
         context = _system_context(model, chat_log.llm_api is not None)
+        json_instruction = (
+            _structured_prompt(
+                structure_name, _format_structured_output(structure, chat_log.llm_api)
+            )
+            if structure and structure_name
+            else None
+        )
+        native_retries = 0
+        force_json_prompt = False
 
         for _iteration in range(max_iterations):
             usage_out: dict[str, Any] = {}
+            request_structure = None if force_json_prompt else structure
+            request_context = (
+                f"{context}\n{json_instruction}"
+                if force_json_prompt and json_instruction
+                else context
+            )
             try:
                 if family == FAMILY_MESSAGES:
                     generator = self._async_stream_messages(
                         model, chat_log, max_tokens, session_id, usage_out,
-                        structure, structure_name, context,
+                        request_structure, structure_name, request_context,
                     )
                 elif family == FAMILY_RESPONSES:
                     generator = self._async_stream_responses(
                         model, chat_log, max_tokens, session_id, usage_out,
-                        structure, structure_name, context,
+                        request_structure, structure_name, request_context,
                     )
                 else:
                     generator = self._async_stream_chat(
                         model, chat_log, max_tokens, session_id, usage_out,
-                        structure, structure_name, context,
+                        request_structure, structure_name, request_context,
                     )
                 async for _content in chat_log.async_add_delta_content_stream(
                     self.entity_id, generator
                 ):
                     pass
+            except OpenCodeTransientError as err:
+                if json_instruction and family == FAMILY_CHAT:
+                    if native_retries < 1 and not force_json_prompt:
+                        native_retries += 1
+                        _LOGGER.warning(
+                            "OpenCode returned a transient structured-output "
+                            "error; retrying the request"
+                        )
+                        continue
+                    if not force_json_prompt:
+                        force_json_prompt = True
+                        _LOGGER.warning(
+                            "OpenCode structured output keeps failing; falling "
+                            "back to prompt-guided JSON"
+                        )
+                        continue
+                raise self._async_api_error(err, model) from err
             except OpenCodeError as err:
                 raise self._async_api_error(err, model) from err
 

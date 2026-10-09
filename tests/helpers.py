@@ -26,17 +26,24 @@ class FakeClient:
         message_events: list[list[dict[str, Any]]] | None = None,
         response_events: list[list[dict[str, Any]]] | None = None,
         error: Exception | None = None,
+        fail_times: int = 0,
+        fail_exc: Exception | None = None,
     ) -> None:
         """Initialize the fake client."""
         self.chat_events = list(chat_events or [])
         self.message_events = list(message_events or [])
         self.response_events = list(response_events or [])
         self.error = error
+        self.fail_times = fail_times
+        self.fail_exc = fail_exc
         self.calls: list[dict[str, Any]] = []
 
     def _scripted(self, events: list[list[dict[str, Any]]]):
         if self.error is not None:
             raise self.error
+        if self.fail_times:
+            self.fail_times -= 1
+            raise self.fail_exc or RuntimeError("fake failure")
         scripted = events.pop(0) if events else []
 
         async def generator():

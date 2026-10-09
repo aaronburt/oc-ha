@@ -4,7 +4,7 @@ from typing import Final
 
 DOMAIN: Final = "opencode_conversation"
 
-INTEGRATION_VERSION: Final = "0.1.0"
+INTEGRATION_VERSION: Final = "0.1.1"
 
 BASE_URL: Final = "https://opencode.ai/zen/go/v1"
 

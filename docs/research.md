@@ -55,6 +55,7 @@ Conclusion: the docs endpoint table is the **canonical, best-quality** route per
 - Chat Completions on `deepseek-v4.1-flash` exposes `reasoning_content` alongside `content` → map to HA `thinking_content` where useful.
 - `gpt-6-luna`/`deepseek` Responses calls include `prompt_cache_retention: "24h"` and `parallel_tool_calls: true` — noted for diagnostics, no action required.
 - Error taxonomy to implement: 401 `AuthError` (→ reauth), 400 `MissingSessionID` (client bug — never expected in production), 400 `ModelProtocolUnsupported` (family map/override issue), 400 `Model is unavailable` (removed model), 400 `max_tokens: Field required` (messages family).
+- **Structured-output flakiness (found 2026-10-10):** chat requests with `response_format: json_schema` on `deepseek-v4.1-flash` intermittently fail with a bare `400 {"model": "..."}` body (~70% failure rate in a 10-request sample; identical requests without `response_format` were 10/10). The client now treats a 400 without an `error` field as transient, retries the structured request once, then falls back to prompt-guided JSON. The same requests succeeded earlier the same day, so this appears to be gateway/provider-side degradation rather than a content rule.
 
 ---
 

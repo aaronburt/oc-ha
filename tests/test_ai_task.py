@@ -7,6 +7,8 @@ import pytest
 from homeassistant.components import ai_task, conversation
 from homeassistant.exceptions import HomeAssistantError
 
+from custom_components.opencode_conversation.api import OpenCodeTransientError
+
 from .helpers import FakeClient, create_entry
 
 STRUCTURED_EVENTS = [
@@ -150,3 +152,56 @@ async def test_ai_task_structured_messages_family(hass, aioclient_mock):
 
     assert result.data == {"ok": True}
     assert "JSON schema" in fake.calls[0]["system"]
+
+
+async def test_ai_task_retries_transient_failure(hass, aioclient_mock):
+    """A transient structured-output failure is retried natively."""
+    entry = await create_entry(hass, aioclient_mock, llm_hass_api=[])
+    fake = FakeClient(
+        chat_events=[STRUCTURED_EVENTS],
+        fail_times=1,
+        fail_exc=OpenCodeTransientError("glitch"),
+    )
+    entry.runtime_data = fake
+
+    entity = _get_ai_task_entity(hass)
+    task = ai_task.GenDataTask(
+        name="test_task",
+        instructions="Return ok",
+        structure=probatio.Schema({probatio.Required("ok"): bool}),
+    )
+    chat_log = conversation.ChatLog(hass, "test-conversation")
+    chat_log.async_add_user_content(conversation.UserContent(content="Return ok"))
+
+    result = await entity._async_generate_data(task, chat_log)
+
+    assert result.data == {"ok": True}
+    assert len(fake.calls) == 2
+    assert "response_format" in fake.calls[1]
+
+
+async def test_ai_task_falls_back_to_prompt_json(hass, aioclient_mock):
+    """Persistent structured failures fall back to prompt-guided JSON."""
+    entry = await create_entry(hass, aioclient_mock, llm_hass_api=[])
+    fake = FakeClient(
+        chat_events=[STRUCTURED_EVENTS],
+        fail_times=2,
+        fail_exc=OpenCodeTransientError("glitch"),
+    )
+    entry.runtime_data = fake
+
+    entity = _get_ai_task_entity(hass)
+    task = ai_task.GenDataTask(
+        name="test_task",
+        instructions="Return ok",
+        structure=probatio.Schema({probatio.Required("ok"): bool}),
+    )
+    chat_log = conversation.ChatLog(hass, "test-conversation")
+    chat_log.async_add_user_content(conversation.UserContent(content="Return ok"))
+
+    result = await entity._async_generate_data(task, chat_log)
+
+    assert result.data == {"ok": True}
+    assert len(fake.calls) == 3
+    assert "response_format" not in fake.calls[2]
+    assert "JSON schema" in fake.calls[2]["messages"][0]["content"]
