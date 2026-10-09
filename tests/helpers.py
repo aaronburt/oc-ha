@@ -14,7 +14,6 @@ from custom_components.opencode_conversation.const import (
 BASE_URL = "https://opencode.ai/zen/go/v1"
 USAGE_URL = f"{BASE_URL}/usage"
 MODELS_URL = f"{BASE_URL}/models"
-CHAT_URL = f"{BASE_URL}/chat/completions"
 
 
 class FakeClient:

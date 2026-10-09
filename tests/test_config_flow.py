@@ -49,7 +49,7 @@ async def test_user_flow_creates_entry_with_subentries(hass, aioclient_mock):
     subentries = {s.subentry_type: s for s in entry.subentries.values()}
     assert set(subentries) == {"conversation", "ai_task_data"}
     assert subentries["conversation"].data["model"] == "glm-5.3"
-    assert subentries["conversation"].data["llm_hass_api"] == ["assist"]
+    assert "llm_hass_api" not in subentries["conversation"].data
     assert subentries["ai_task_data"].data["model"] == "glm-5.3"
 
 

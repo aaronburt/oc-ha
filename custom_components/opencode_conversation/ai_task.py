@@ -76,9 +76,8 @@ class OpenCodeAITaskEntity(ai_task.AITaskEntity, OpenCodeBaseLLMEntity):
         try:
             data = json_loads(text)
         except JSONDecodeError as err:
-            _LOGGER.error(
-                "Failed to parse structured response: %s. Response: %s", err, text
-            )
+            _LOGGER.error("Failed to parse structured response: %s", err)
+            _LOGGER.debug("Unparseable structured response: %s", text)
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="invalid_structured_response",

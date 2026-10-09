@@ -50,6 +50,7 @@ from .const import (
     DOMAIN,
     FAMILY_AUTO,
     FAMILY_OPTIONS,
+    MODEL_PRIVACY_NOTES,
 )
 
 VolDictType = dict[probatio.Marker, Any]
@@ -62,9 +63,18 @@ _FAMILY_LABELS = {
 }
 
 
+def _model_label(model: str) -> str:
+    """Return the model name with its data handling note, if it has one."""
+    if note := MODEL_PRIVACY_NOTES.get(model):
+        return f"{model} ({note})"
+    return model
+
+
 def _model_options(models: list[str]) -> list[SelectOptionDict]:
     """Build model selector options."""
-    return [SelectOptionDict(value=model, label=model) for model in models]
+    return [
+        SelectOptionDict(value=model, label=_model_label(model)) for model in models
+    ]
 
 
 def _family_options() -> list[SelectOptionDict]:
@@ -145,7 +155,6 @@ class OpenCodeConfigFlow(ConfigFlow, domain=DOMAIN):
                         "subentry_type": "conversation",
                         "data": {
                             CONF_MODEL: model,
-                            CONF_LLM_HASS_API: ["assist"],
                             CONF_PROMPT: "",
                             CONF_MAX_TOKENS: DEFAULT_MAX_TOKENS,
                             CONF_API_FAMILY: FAMILY_AUTO,
@@ -281,7 +290,6 @@ class OpenCodeSubentryFlowHandler(ConfigSubentryFlow):
         else:
             self.options = {
                 CONF_MODEL: DEFAULT_MODEL,
-                CONF_LLM_HASS_API: ["assist"],
                 CONF_PROMPT: "",
                 CONF_MAX_TOKENS: DEFAULT_MAX_TOKENS,
                 CONF_API_FAMILY: FAMILY_AUTO,
@@ -346,7 +354,7 @@ class OpenCodeSubentryFlowHandler(ConfigSubentryFlow):
             ]
             step_schema[
                 probatio.Optional(
-                    CONF_LLM_HASS_API, default=options.get(CONF_LLM_HASS_API, ["assist"])
+                    CONF_LLM_HASS_API, default=options.get(CONF_LLM_HASS_API, [])
                 )
             ] = SelectSelector(
                 SelectSelectorConfig(options=hass_apis, multiple=True)

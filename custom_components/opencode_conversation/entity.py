@@ -134,7 +134,8 @@ def _parse_tool_args(raw: str) -> dict[str, Any]:
     try:
         result = json.loads(raw)
     except json.JSONDecodeError:
-        _LOGGER.warning("OpenCode returned invalid tool arguments: %s", raw)
+        _LOGGER.warning("OpenCode returned invalid tool arguments")
+        _LOGGER.debug("Invalid tool arguments: %s", raw)
         return {}
     return result if isinstance(result, dict) else {}
 
@@ -530,6 +531,9 @@ class OpenCodeBaseLLMEntity(Entity):
         async for event in self.client.stream_chat_completions(
             body, session_id=session_id
         ):
+            if error := event.get("error"):
+                message = error.get("message") if isinstance(error, dict) else error
+                raise OpenCodeError(str(message or "OpenCode streaming error"))
             choices = event.get("choices") or []
             if not choices:
                 if usage := event.get("usage"):

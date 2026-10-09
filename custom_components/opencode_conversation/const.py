@@ -4,7 +4,7 @@ from typing import Final
 
 DOMAIN: Final = "opencode_conversation"
 
-INTEGRATION_VERSION: Final = "0.1.1"
+INTEGRATION_VERSION: Final = "0.1.2"
 
 BASE_URL: Final = "https://opencode.ai/zen/go/v1"
 
@@ -73,6 +73,19 @@ CERTIFIED_MODELS: Final[dict[str, str]] = {
     "grok-4.7": FAMILY_RESPONSES,
     "muse-spark-1.2-contributor": FAMILY_RESPONSES,
     "muse-spark-1.3-contributor": FAMILY_RESPONSES,
+}
+
+# Data handling for models that keep prompts or may use them for training,
+# taken from the OpenCode Go privacy table. Shown next to the model in the
+# setup and options flows.
+MODEL_PRIVACY_NOTES: Final[dict[str, str]] = {
+    "grok-4.6": "prompts kept 30 days",
+    "grok-4.7": "prompts kept 30 days",
+    "gpt-5.6-luna": "prompts kept 30 days",
+    "gpt-6-luna": "prompts kept 30 days",
+    "claude-haiku-5-5": "prompts kept 30 days",
+    "muse-spark-1.2-contributor": "may train on prompts, limited regions",
+    "muse-spark-1.3-contributor": "may train on prompts, limited regions",
 }
 
 

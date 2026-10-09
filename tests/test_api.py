@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import aiohttp
 import pytest
 
@@ -217,6 +219,25 @@ async def test_stream_messages_and_responses(hass, aioclient_mock):
 
     assert messages_events == [{"type": "message_stop"}]
     assert responses_events == [{"type": "response.completed"}]
+
+
+async def test_failed_stream_does_not_log_prompt(hass, aioclient_mock, caplog):
+    """A failed stream raises without logging the request body, even at debug."""
+    caplog.set_level(logging.DEBUG)
+    aioclient_mock.post(
+        f"{BASE_URL}/chat/completions",
+        status=500,
+        json={"error": {"message": "server exploded"}},
+    )
+    client = OpenCodeClient(hass, "key")
+    body = {
+        "model": "test-model",
+        "messages": [{"role": "user", "content": "secret kitchen plan"}],
+    }
+    with pytest.raises(OpenCodeError):
+        async for _event in client.stream_chat_completions(body):
+            pass
+    assert "secret kitchen plan" not in caplog.text
 
 
 async def test_stream_connection_error(hass, aioclient_mock):

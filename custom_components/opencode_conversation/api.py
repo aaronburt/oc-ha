@@ -74,7 +74,6 @@ class OpenCodeClient:
 
     def __init__(self, hass: HomeAssistant, api_key: str) -> None:
         """Initialize the client."""
-        self._hass = hass
         self._api_key = api_key
         self._session = async_get_clientsession(hass)
         self._session_id = ulid_now()
@@ -162,7 +161,6 @@ class OpenCodeClient:
             raise OpenCodeConnectionError("Timed out talking to OpenCode") from err
         except aiohttp.ClientError as err:
             raise OpenCodeConnectionError(f"Error talking to OpenCode: {err}") from err
-        raise OpenCodeConnectionError("Unknown error talking to OpenCode")
 
     async def _async_stream(
         self,
@@ -186,11 +184,6 @@ class OpenCodeClient:
                     BASE_URL + path, headers=headers, json=request_body
                 ) as resp:
                     if resp.status != 200:
-                        _LOGGER.debug(
-                            "OpenCode request failed (%s): %s",
-                            resp.status,
-                            json.dumps(request_body)[:2000],
-                        )
                         await self._async_raise_for_status(resp)
                     async for raw_line in resp.content:
                         line = raw_line.strip()

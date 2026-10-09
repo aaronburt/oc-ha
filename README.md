@@ -6,7 +6,7 @@ Use models from your [OpenCode Go](https://opencode.ai/go) subscription as Home 
 
 ## Features
 
-- **Assist conversation agent** — chat in the dashboard, use it in voice pipelines, or call it from automations. Select *Assist* as the Home Assistant API to let the model control your home with intents (lights, covers, scripts, and so on).
+- **Assist conversation agent** — chat in the dashboard, use it in voice pipelines, or call it from automations. Turn on *Control Home Assistant* with *Assist* to let the model control your home with intents (lights, covers, scripts, and so on). It is off by default.
 - **AI Task entity** — use `ai_task.generate_data` in automations, including structured output (JSON schema) for models that support it.
 - **Multiple agents per subscription** — add one conversation agent per model (for example a cheap model for voice and a stronger model for automations). Each agent is a config subentry under a single API key.
 - **All three OpenCode Go API families** — Chat Completions models (DeepSeek V4, GLM, Kimi, LongCat, MiMo, …), Anthropic Messages models (Claude Haiku 5.5, MiniMax, Qwen), and OpenAI Responses models (GPT, Grok, Muse Spark).
@@ -34,7 +34,7 @@ Copy `custom_components/opencode_conversation/` into your Home Assistant `config
 ## Setup
 
 1. Go to **Settings → Devices & services → Add integration** and search for **OpenCode**.
-2. Paste your OpenCode Go API key and pick a model. A default assistant and an AI Task entity are created automatically.
+2. Paste your OpenCode Go API key and pick a model. A default assistant and an AI Task entity are created automatically. The assistant is chat-only until you turn on *Control Home Assistant* in its options.
 3. To use it in Assist, go to **Settings → Voice assistants**, select your pipeline, and choose the OpenCode assistant as the *Conversation agent*.
 
 ### Adding more agents
@@ -46,7 +46,7 @@ Open the OpenCode integration, then **Add conversation agent** to create additio
 | **Model** | Any model available to your subscription (certified set by default). |
 | **Custom model ID** | Use a model that is not listed yet. Set the API family manually when doing this. |
 | **API family** | Which wire protocol the model speaks: Automatic, Chat Completions, Messages, or Responses. Only needed for custom models. |
-| **Control Home Assistant** | Select *Assist* to let the agent control your home. Leave empty for a chat-only agent. |
+| **Control Home Assistant** | Off by default. Select *Assist* to let the agent control your home. Text the model reads, such as entity names and states, can influence those actions. Leave empty for a chat-only agent. |
 | **Instructions** | Optional extra system prompt for this agent. |
 | **Maximum response tokens** | Upper limit per response. |
 
@@ -83,7 +83,7 @@ response_variable: result
 
 - Your API key is stored in your Home Assistant configuration and sent only to `opencode.ai`.
 - **OpenCode Go is designed for coding agents**, and OpenCode states that traffic is monitored for abuse. This integration sends typical assistant traffic (chat, tool calls) — use it with that in mind, keep usage reasonable, and review the [OpenCode Go docs](https://opencode.ai/v2/docs/console/go) for current terms.
-- Data handling varies per model. Most Go models are zero-retention and not used for training; Grok/GPT requests are retained up to 30 days, Claude up to 30 days, and Muse Spark Contributor models may be used for training and are region-limited. Check the [Go privacy table](https://opencode.ai/v2/docs/console/go#privacy) before sending sensitive data.
+- Data handling varies per model. Most Go models are zero-retention and not used for training; Grok/GPT requests are retained up to 30 days, Claude up to 30 days, and Muse Spark Contributor models may be used for training and are region-limited. Check the [Go privacy table](https://opencode.ai/v2/docs/console/go#privacy) before sending sensitive data. The model picker adds a note next to models that keep prompts or may train on them.
 
 ## Removal
 

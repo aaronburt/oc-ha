@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import probatio
 import pytest
 from homeassistant.components import ai_task, conversation
@@ -81,8 +83,9 @@ def _get_ai_task_entity(hass):
     return next(iter(component.entities))
 
 
-async def test_ai_task_invalid_structured_response(hass, aioclient_mock):
+async def test_ai_task_invalid_structured_response(hass, aioclient_mock, caplog):
     """Unparseable structured output raises a translatable error."""
+    caplog.set_level(logging.INFO)
     entry = await create_entry(hass, aioclient_mock, llm_hass_api=[])
     fake = FakeClient(
         [
@@ -113,6 +116,7 @@ async def test_ai_task_invalid_structured_response(hass, aioclient_mock):
         await entity._async_generate_data(task, chat_log)
 
     assert err.value.translation_key == "invalid_structured_response"
+    assert "not json" not in caplog.text
 
 
 async def test_ai_task_structured_messages_family(hass, aioclient_mock):

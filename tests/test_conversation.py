@@ -503,6 +503,19 @@ async def test_invalid_llm_api_configuration(hass, aioclient_mock):
     assert result.response.error_code is not None
 
 
+CHAT_ERROR_EVENTS = [[{"error": {"message": "upstream kaboom"}}]]
+
+
+async def test_chat_error_event(hass, aioclient_mock):
+    """An error event from the Chat Completions stream becomes an error result."""
+    entry = await create_entry(hass, aioclient_mock, llm_hass_api=[])
+    entry.runtime_data = FakeClient(chat_events=CHAT_ERROR_EVENTS)
+
+    result = await _converse(hass, "Hi")
+
+    assert result.response.error_code is not None
+
+
 async def test_messages_error_event(hass, aioclient_mock):
     """An error event from the Messages stream becomes an error result."""
     entry = await create_entry(

@@ -18,7 +18,7 @@
           "model": "Model"
         },
         "data_description": {
-          "model": "Only models available to your subscription with a verified API family are listed."
+          "model": "Only models available to your subscription with a verified API family are listed. A note after a model name describes how OpenCode handles your prompts."
         }
       },
       "reauth_confirm": {
@@ -68,10 +68,10 @@
           },
           "data_description": {
             "name": "A name for this agent, for example the room or purpose it serves.",
-            "model": "Certified models available to your subscription.",
+            "model": "Certified models available to your subscription. A note after a model name describes how OpenCode handles your prompts.",
             "custom_model": "Optional. Use a model ID that is not in the list above, for example a newly released model.",
             "api_family": "Which API the model speaks. Leave on Automatic unless you use a custom model.",
-            "llm_hass_api": "Select Assist to let the model control your home. Leave empty for a chat-only agent.",
+            "llm_hass_api": "Off by default. Select Assist to let the model control your home. Any text the model reads, such as entity names and states, can influence those actions. Leave empty for a chat-only agent.",
             "prompt": "Optional extra instructions added to every request.",
             "max_tokens": "Upper limit for tokens the model may generate per response."
           }
@@ -101,7 +101,7 @@
           },
           "data_description": {
             "name": "A name for this AI task entity.",
-            "model": "Certified models available to your subscription.",
+            "model": "Certified models available to your subscription. A note after a model name describes how OpenCode handles your prompts.",
             "custom_model": "Optional. Use a model ID that is not in the list above.",
             "api_family": "Which API the model speaks. Leave on Automatic unless you use a custom model.",
             "max_tokens": "Upper limit for tokens the model may generate per task."
