@@ -18,7 +18,9 @@ from .const import BASE_URL, FAMILY_CHAT, FAMILY_MESSAGES, FAMILY_RESPONSES, INT
 _LOGGER = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT: Final = 60
-STREAM_TIMEOUT: Final = 600
+STREAM_IDLE_TIMEOUT: Final = 120
+GET_RETRIES: Final = 2
+RETRY_BACKOFF: Final = (0.5, 1.0)
 
 
 class OpenCodeError(Exception):
@@ -145,22 +147,41 @@ class OpenCodeClient:
         family: str,
         json_body: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Perform a non-streaming JSON request."""
-        try:
-            async with asyncio.timeout(REQUEST_TIMEOUT):
-                async with self._session.request(
-                    method,
-                    BASE_URL + path,
-                    headers={**self._base_headers, **self._auth_headers(family)},
-                    json=json_body,
-                ) as resp:
-                    if resp.status == 200:
-                        return await resp.json()
-                    await self._async_raise_for_status(resp)
-        except TimeoutError as err:
-            raise OpenCodeConnectionError("Timed out talking to OpenCode") from err
-        except aiohttp.ClientError as err:
-            raise OpenCodeConnectionError(f"Error talking to OpenCode: {err}") from err
+        """Perform a non-streaming JSON request, retrying idempotent GETs."""
+        attempts = 0
+        while True:
+            retryable = method == "GET" and attempts < GET_RETRIES
+            try:
+                async with asyncio.timeout(REQUEST_TIMEOUT):
+                    async with self._session.request(
+                        method,
+                        BASE_URL + path,
+                        headers={**self._base_headers, **self._auth_headers(family)},
+                        json=json_body,
+                    ) as resp:
+                        if resp.status == 200:
+                            return await resp.json()
+                        await self._async_raise_for_status(resp)
+            except OpenCodeError as err:
+                if not retryable or not err.status or err.status < 500:
+                    raise
+                _LOGGER.debug(
+                    "OpenCode %s %s returned %s; retrying", method, path, err.status
+                )
+            except TimeoutError as err:
+                if not retryable:
+                    raise OpenCodeConnectionError(
+                        "Timed out talking to OpenCode"
+                    ) from err
+                _LOGGER.debug("OpenCode %s %s timed out; retrying", method, path)
+            except aiohttp.ClientError as err:
+                if not retryable:
+                    raise OpenCodeConnectionError(
+                        f"Error talking to OpenCode: {err}"
+                    ) from err
+                _LOGGER.debug("OpenCode %s %s failed; retrying", method, path)
+            await asyncio.sleep(RETRY_BACKOFF[attempts])
+            attempts += 1
 
     async def _async_stream(
         self,
@@ -170,7 +191,11 @@ class OpenCodeClient:
         body: dict[str, Any],
         session_id: str | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
-        """Perform a streaming request and yield decoded SSE JSON events."""
+        """Perform a streaming request and yield decoded SSE JSON events.
+
+        The stream is abandoned after STREAM_IDLE_TIMEOUT without any data,
+        so a hung upstream cannot hold a voice pipeline open indefinitely.
+        """
         headers = {
             **self._base_headers,
             **self._auth_headers(family),
@@ -178,26 +203,33 @@ class OpenCodeClient:
             "x-opencode-session": session_id or self._session_id,
         }
         request_body = {**body, "stream": True}
+        timeout = aiohttp.ClientTimeout(
+            total=None,
+            sock_connect=REQUEST_TIMEOUT,
+            sock_read=STREAM_IDLE_TIMEOUT,
+        )
         try:
-            async with asyncio.timeout(STREAM_TIMEOUT):
-                async with self._session.post(
-                    BASE_URL + path, headers=headers, json=request_body
-                ) as resp:
-                    if resp.status != 200:
-                        await self._async_raise_for_status(resp)
-                    async for raw_line in resp.content:
-                        line = raw_line.strip()
-                        if not line.startswith(b"data:"):
-                            continue
-                        payload = line[5:].strip()
-                        if payload == b"[DONE]":
-                            break
-                        try:
-                            event = json.loads(payload)
-                        except json.JSONDecodeError:
-                            continue
-                        if isinstance(event, dict):
-                            yield event
+            async with self._session.post(
+                BASE_URL + path,
+                headers=headers,
+                json=request_body,
+                timeout=timeout,
+            ) as resp:
+                if resp.status != 200:
+                    await self._async_raise_for_status(resp)
+                async for raw_line in resp.content:
+                    line = raw_line.strip()
+                    if not line.startswith(b"data:"):
+                        continue
+                    payload = line[5:].strip()
+                    if payload == b"[DONE]":
+                        break
+                    try:
+                        event = json.loads(payload)
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(event, dict):
+                        yield event
         except TimeoutError as err:
             raise OpenCodeConnectionError("OpenCode response timed out") from err
         except aiohttp.ClientError as err:

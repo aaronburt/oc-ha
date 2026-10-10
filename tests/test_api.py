@@ -6,6 +6,9 @@ import logging
 
 import aiohttp
 import pytest
+from pytest_homeassistant_custom_component.test_util.aiohttp import (
+    AiohttpClientMockResponse,
+)
 
 from custom_components.opencode_conversation.api import (
     OpenCodeAuthError,
@@ -238,6 +241,62 @@ async def test_failed_stream_does_not_log_prompt(hass, aioclient_mock, caplog):
         async for _event in client.stream_chat_completions(body):
             pass
     assert "secret kitchen plan" not in caplog.text
+
+
+def _flaky_get(scripted):
+    """Return a mock side effect that plays scripted responses in order."""
+
+    async def side_effect(method, url, data):
+        kwargs = queue.pop(0) if queue else {"json": {"usage": {}}}
+        return AiohttpClientMockResponse(method, url, **kwargs)
+
+    queue = list(scripted)
+    return side_effect
+
+
+async def test_get_retries_transient_failure(hass, aioclient_mock):
+    """A failed GET is retried and can still succeed."""
+    aioclient_mock.get(
+        USAGE_URL,
+        side_effect=_flaky_get(
+            [
+                {"status": 500, "json": {"error": {"message": "boom"}}},
+                {"json": {"usage": {}}},
+            ]
+        ),
+    )
+    client = OpenCodeClient(hass, "key")
+
+    assert await client.async_get_usage() == {"usage": {}}
+    assert aioclient_mock.call_count == 2
+
+
+async def test_get_retry_is_bounded(hass, aioclient_mock):
+    """A GET that keeps failing stops after the retry budget."""
+    aioclient_mock.get(USAGE_URL, status=500, json={"error": {"message": "boom"}})
+    client = OpenCodeClient(hass, "key")
+
+    with pytest.raises(OpenCodeError) as err:
+        await client.async_get_usage()
+
+    assert err.value.status == 500
+    assert aioclient_mock.call_count == 3
+
+
+async def test_post_is_not_retried(hass, aioclient_mock):
+    """Streaming POSTs are not retried."""
+    aioclient_mock.post(
+        f"{BASE_URL}/chat/completions",
+        status=500,
+        json={"error": {"message": "boom"}},
+    )
+    client = OpenCodeClient(hass, "key")
+
+    with pytest.raises(OpenCodeError):
+        async for _event in client.stream_chat_completions({"model": "test-model"}):
+            pass
+
+    assert aioclient_mock.call_count == 1
 
 
 async def test_stream_connection_error(hass, aioclient_mock):
