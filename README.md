@@ -59,11 +59,3 @@ data:
   entity_id: ai_task.opencode_ai_task
 response_variable: result
 ```
-
-## Troubleshooting
-
-- **"Invalid API key"** — check the key in the [OpenCode Console](https://opencode.ai/console). If it was rotated, use **Reauthenticate** on the integration.
-- **"OpenCode usage limit reached"** — Go plans have per-model 5-hour, weekly, and monthly limits. Switch the agent to another model or wait for the reset; check usage in the console.
-- **"Model … is no longer available"** — the model was removed from Go. Edit the agent and pick another model.
-- **"Model … does not support the configured API family"** — for a custom model, set the correct **API family** in the agent options.
-- When reporting an issue, enable debug logging for `custom_components.opencode_conversation`.
