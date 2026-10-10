@@ -1,6 +1,7 @@
 # Test dependencies for CI and local development.
 # Pinned to match Home Assistant 2026.10.0 (the version pinned by PHACC below).
 pytest-homeassistant-custom-component==0.13.371
+pytest-cov==7.1.0
 probatio==0.13.0
 gazetteer-matcher==1.1.0
 hassil==3.12.1
