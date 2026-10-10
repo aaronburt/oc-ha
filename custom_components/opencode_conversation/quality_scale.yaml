@@ -19,7 +19,7 @@ rules:
     comment: The integration has no conditions.
   docs-high-level-description: done
   docs-installation-instructions: done
-  docs-removal-instructions: done
+  docs-removal-instructions: todo
   docs-triggers:
     status: exempt
     comment: The integration has no triggers.
@@ -60,12 +60,12 @@ rules:
     status: exempt
     comment: The integration only fetches models during configuration.
   docs-examples: done
-  docs-known-limitations: done
+  docs-known-limitations: todo
   docs-supported-devices:
     status: exempt
     comment: Service integration, no devices.
   docs-supported-functions: done
-  docs-troubleshooting: done
+  docs-troubleshooting: todo
   docs-use-cases: done
   dynamic-devices:
     status: exempt
