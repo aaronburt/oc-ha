@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
 from unittest.mock import patch
 
 from homeassistant import config_entries
@@ -231,6 +232,97 @@ async def test_reconfigure_flow(hass, aioclient_mock):
 
     entry = hass.config_entries.async_entries(DOMAIN)[0]
     assert entry.data["api_key"] == "rotated-key"
+
+
+async def test_reauth_refreshes_unique_id(hass, aioclient_mock):
+    """Reauth refreshes the stored key fingerprint."""
+    entry = await create_entry(hass, aioclient_mock)
+    old_unique_id = entry.unique_id
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_REAUTH,
+            "entry_id": entry.entry_id,
+        },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"api_key": "new-key"}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    await hass.async_block_till_done()
+
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    assert entry.unique_id == sha256(b"new-key").hexdigest()
+    assert entry.unique_id != old_unique_id
+
+
+async def test_reconfigure_refreshes_unique_id(hass, aioclient_mock):
+    """Reconfigure refreshes the stored key fingerprint."""
+    entry = await create_entry(hass, aioclient_mock)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"api_key": "rotated-key"}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    await hass.async_block_till_done()
+
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    assert entry.unique_id == sha256(b"rotated-key").hexdigest()
+
+
+async def test_reauth_rejects_key_used_by_another_entry(hass, aioclient_mock):
+    """Reauth aborts when the new key already belongs to another entry."""
+    entry = await create_entry(hass, aioclient_mock)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"api_key": "other-key"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"model": "glm-5.3"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_REAUTH,
+            "entry_id": entry.entry_id,
+        },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"api_key": "other-key"}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_user_flow_usage_limit(hass, aioclient_mock):
+    """A rate-limited usage endpoint shows the usage limit error."""
+    aioclient_mock.get(USAGE_URL, status=429, json={"error": {"message": "limit"}})
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"api_key": "test-key"}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "usage_limit"}
 
 
 async def test_setup_auth_failure_starts_reauth(hass, aioclient_mock):

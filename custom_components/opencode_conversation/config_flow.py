@@ -36,7 +36,7 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
-from .api import OpenCodeAuthError, OpenCodeClient, OpenCodeError
+from .api import OpenCodeAuthError, OpenCodeClient, OpenCodeError, OpenCodeRateLimited
 from .const import (
     CERTIFIED_MODELS,
     CONF_API_FAMILY,
@@ -96,6 +96,11 @@ def _api_key_schema() -> probatio.Schema:
     )
 
 
+def _api_key_fingerprint(api_key: str) -> str:
+    """Return the stored identifier for an API key."""
+    return sha256(api_key.encode()).hexdigest()
+
+
 class OpenCodeConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle the OpenCode config flow."""
 
@@ -118,10 +123,12 @@ class OpenCodeConfigFlow(ConfigFlow, domain=DOMAIN):
                 await client.async_validate_key()
             except OpenCodeAuthError:
                 errors["base"] = "invalid_auth"
+            except OpenCodeRateLimited:
+                errors["base"] = "usage_limit"
             except OpenCodeError:
                 errors["base"] = "cannot_connect"
             else:
-                await self.async_set_unique_id(sha256(api_key.encode()).hexdigest())
+                await self.async_set_unique_id(_api_key_fingerprint(api_key))
                 self._abort_if_unique_id_configured()
                 self._api_key = api_key
                 try:
@@ -208,11 +215,18 @@ class OpenCodeConfigFlow(ConfigFlow, domain=DOMAIN):
                 await client.async_validate_key()
             except OpenCodeAuthError:
                 errors["base"] = "invalid_auth"
+            except OpenCodeRateLimited:
+                errors["base"] = "usage_limit"
             except OpenCodeError:
                 errors["base"] = "cannot_connect"
             else:
+                entry = self._get_reauth_entry()
+                fingerprint = _api_key_fingerprint(api_key)
+                if self._fingerprint_in_use(entry, fingerprint):
+                    return self.async_abort(reason="already_configured")
                 return self.async_update_reload_and_abort(
-                    self._get_reauth_entry(),
+                    entry,
+                    unique_id=fingerprint,
                     data_updates={CONF_API_KEY: api_key},
                 )
 
@@ -234,11 +248,18 @@ class OpenCodeConfigFlow(ConfigFlow, domain=DOMAIN):
                 await client.async_validate_key()
             except OpenCodeAuthError:
                 errors["base"] = "invalid_auth"
+            except OpenCodeRateLimited:
+                errors["base"] = "usage_limit"
             except OpenCodeError:
                 errors["base"] = "cannot_connect"
             else:
+                entry = self._get_reconfigure_entry()
+                fingerprint = _api_key_fingerprint(api_key)
+                if self._fingerprint_in_use(entry, fingerprint):
+                    return self.async_abort(reason="already_configured")
                 return self.async_update_reload_and_abort(
-                    self._get_reconfigure_entry(),
+                    entry,
+                    unique_id=fingerprint,
                     data_updates={CONF_API_KEY: api_key},
                 )
 
@@ -246,6 +267,13 @@ class OpenCodeConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="reconfigure",
             data_schema=_api_key_schema(),
             errors=errors,
+        )
+
+    def _fingerprint_in_use(self, entry: ConfigEntry, fingerprint: str) -> bool:
+        """Return if another entry already uses this API key."""
+        return any(
+            other.entry_id != entry.entry_id and other.unique_id == fingerprint
+            for other in self.hass.config_entries.async_entries(DOMAIN)
         )
 
     @classmethod

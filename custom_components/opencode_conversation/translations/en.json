@@ -38,7 +38,8 @@
     },
     "error": {
       "invalid_auth": "Invalid API key",
-      "cannot_connect": "Failed to connect to OpenCode"
+      "cannot_connect": "Failed to connect to OpenCode",
+      "usage_limit": "OpenCode usage limit reached. Try again later."
     },
     "abort": {
       "already_configured": "This API key is already configured",
