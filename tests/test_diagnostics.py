@@ -36,3 +36,26 @@ async def test_diagnostics_api_error(hass, aioclient_mock):
     diagnostics = await async_get_config_entry_diagnostics(hass, entry)
 
     assert diagnostics["api_error"] == "boom"
+
+
+async def test_diagnostics_redacts_subentry_prompt(hass, aioclient_mock):
+    """Diagnostics redact subentry prompt text."""
+    entry = await create_entry(hass, aioclient_mock)
+    subentry = next(
+        sub
+        for sub in entry.subentries.values()
+        if sub.subentry_type == "conversation"
+    )
+    data = dict(subentry.data)
+    data["prompt"] = "secret household instructions"
+    hass.config_entries.async_update_subentry(entry, subentry, data=data)
+    await hass.async_block_till_done()
+
+    diagnostics = await async_get_config_entry_diagnostics(hass, entry)
+
+    conversation = next(
+        item
+        for item in diagnostics["entry"]["subentries"]
+        if item["subentry_type"] == "conversation"
+    )
+    assert conversation["data"]["prompt"] == "**REDACTED**"

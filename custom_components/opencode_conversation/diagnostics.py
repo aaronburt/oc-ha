@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_API_KEY
+from homeassistant.const import CONF_API_KEY, CONF_PROMPT
 from homeassistant.core import HomeAssistant
 
 from .api import OpenCodeClient, OpenCodeError
@@ -32,7 +32,10 @@ async def async_get_config_entry_diagnostics(
                 {
                     "subentry_type": subentry.subentry_type,
                     "title": subentry.title,
-                    "data": dict(subentry.data),
+                    "data": {
+                        key: REDACTED if key == CONF_PROMPT else value
+                        for key, value in subentry.data.items()
+                    },
                 }
                 for subentry in entry.subentries.values()
             ],
