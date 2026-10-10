@@ -1,10 +1,14 @@
 """Constants for the OpenCode integration."""
 
+import json
+from pathlib import Path
 from typing import Final
 
 DOMAIN: Final = "opencode_conversation"
 
-INTEGRATION_VERSION: Final = "0.1.2"
+INTEGRATION_VERSION: Final = json.loads(
+    (Path(__file__).parent / "manifest.json").read_text(encoding="utf-8")
+)["version"]
 
 BASE_URL: Final = "https://opencode.ai/zen/go/v1"
 
